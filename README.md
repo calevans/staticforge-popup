@@ -1,4 +1,4 @@
-# StaticForge Popup Feature
+# [StaticForge](https://calevans.com/staticforge) Popup Feature
 
 A powerful popup management feature for StaticForge sites. This library allows you to define popups using Markdown and YAML frontmatter, and easily attach them to specific pages.
 
