@@ -1,0 +1,20 @@
+{
+    "name": "calevans/staticforge-popup",
+    "description": "Popup feature for StaticForge",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Cal Evans",
+            "email": "cal@calevans.com"
+        }
+    ],
+    "require": {
+        "php": "^8.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "Calevans\\StaticForgePopup\\": "src/"
+        }
+    }
+}

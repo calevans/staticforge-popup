@@ -1,0 +1,37 @@
+<form action="{{ endpoint }}" method="POST" class="oom-popup-form" data-success-message="{{ success_message }}" data-error-message="{{ error_message }}">
+    {% if challenge_url %}
+    <div class="form-group">
+        <altcha-widget challengeurl="{{ challenge_url }}"></altcha-widget>
+    </div>
+    {% endif %}
+
+    {% for field in fields %}
+    <div class="form-group" {% if field.type == 'hidden' %}style="display:none;"{% endif %}>
+        {% if field.type == 'checkbox' %}
+            <div class="checkbox-group" style="text-align: left; color: #f0f0f0; font-size: 0.9rem;">
+                <input type="checkbox"
+                       name="{{ field.name }}"
+                       id="{{ field.name }}"
+                       {% if field.required %}required{% endif %}
+                       style="width: auto; margin-right: 10px;">
+                <label for="{{ field.name }}">{{ field.label }}</label>
+            </div>
+        {% else %}
+            <input type="{{ field.type }}"
+                   name="{{ field.name }}"
+                   id="{{ field.name }}"
+                   {% if field.label %}placeholder="{{ field.label }}"{% endif %}
+                   {% if field.value %}value="{{ field.value }}"{% endif %}
+                   {% if field.required %}required{% endif %}
+                   class="form-control">
+        {% endif %}
+    </div>
+    {% endfor %}
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">{{ submit_text }}</button>
+    </div>
+
+    <div class="form-message success-message" style="display: none;"></div>
+    <div class="form-message error-message" style="display: none;"></div>
+</form>
