@@ -16,5 +16,10 @@
         "psr-4": {
             "Calevans\\StaticForgePopup\\": "src/"
         }
+    },
+    "extra": {
+        "staticforge": {
+            "feature": "Calevans\\StaticForgePopup\\Feature"
+        }
     }
 }
