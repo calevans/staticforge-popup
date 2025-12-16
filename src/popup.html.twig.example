@@ -1,6 +1,6 @@
-<div id="oom-popup-{{ popup.metadata.id }}" class="oom-popup-overlay">
-    <div class="oom-popup-content">
-        <span class="oom-popup-close close-popup">&times;</span>
+<div id="sf-popup-{{ popup.metadata.id }}" class="sf-popup-overlay" style="display:none;">
+    <div class="sf-popup-content">
+        <span class="sf-popup-close close-popup">&times;</span>
         {{ popup.content | raw }}
     </div>
 </div>

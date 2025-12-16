@@ -1,4 +1,4 @@
-<form action="{{ endpoint }}" method="POST" class="oom-popup-form" data-success-message="{{ success_message }}" data-error-message="{{ error_message }}">
+<form action="{{ endpoint }}" method="POST" class="sf-popup-form" data-success-message="{{ success_message }}" data-error-message="{{ error_message }}">
     {% if challenge_url %}
     <div class="form-group">
         <altcha-widget challengeurl="{{ challenge_url }}"></altcha-widget>

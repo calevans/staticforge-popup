@@ -1,5 +1,5 @@
 /* Popup Overlay with Blur */
-.oom-popup-overlay {
+.sf-popup-overlay {
     display: none;
     position: fixed;
     top: 0;
@@ -16,12 +16,12 @@
 }
 
 /* When visible (handled by JS fadeIn, but we can enforce transition if we toggle class) */
-.oom-popup-overlay[style*="display: flex"] {
+.sf-popup-overlay[style*="display: flex"] {
     opacity: 1;
 }
 
 /* Main Content Box - Art Deco Style */
-.oom-popup-content {
+.sf-popup-content {
     /* Balanced opacity (approx 65-75%) to show smoke texture but ensure text readability */
     background: linear-gradient(145deg, rgba(20, 20, 20, 0.65) 0%, rgba(5, 5, 5, 0.75) 100%), url('/assets/images/card_bg_2.png');
     background-size: cover;
@@ -43,13 +43,13 @@
 }
 
 /* Animation for content entry */
-.oom-popup-overlay[style*="display: flex"] .oom-popup-content {
+.sf-popup-overlay[style*="display: flex"] .sf-popup-content {
     transform: translateY(0);
 }
 
 /* Decorative Corner Elements (Pseudo-elements) */
-.oom-popup-content::before,
-.oom-popup-content::after {
+.sf-popup-content::before,
+.sf-popup-content::after {
     content: '';
     position: absolute;
     width: 20px;
@@ -58,14 +58,14 @@
     transition: all 0.3s ease;
 }
 
-.oom-popup-content::before {
+.sf-popup-content::before {
     top: 10px;
     left: 10px;
     border-right: none;
     border-bottom: none;
 }
 
-.oom-popup-content::after {
+.sf-popup-content::after {
     bottom: 10px;
     right: 10px;
     border-left: none;
@@ -73,9 +73,9 @@
 }
 
 /* Typography */
-.oom-popup-content h1,
-.oom-popup-content h2,
-.oom-popup-content h3 {
+.sf-popup-content h1,
+.sf-popup-content h2,
+.sf-popup-content h3 {
     font-family: 'Lora', serif;
     color: #d4af37;
     margin-bottom: 1rem;
@@ -88,7 +88,7 @@
     text-shadow: 0 2px 4px rgba(0,0,0,0.8); /* Added shadow to headers */
 }
 
-.oom-popup-content p {
+.sf-popup-content p {
     color: #f0f0f0; /* Lighter text for better contrast */
     line-height: 1.8;
     margin-bottom: 2.5rem;
@@ -98,7 +98,7 @@
 }
 
 /* Close Button */
-.oom-popup-close {
+.sf-popup-close {
     position: absolute;
     top: 15px;
     right: 20px;
@@ -110,19 +110,19 @@
     z-index: 10;
 }
 
-.oom-popup-close:hover {
+.sf-popup-close:hover {
     color: #d4af37;
     transform: rotate(90deg);
 }
 
 /* Form Styling */
-.oom-popup-content .form-group {
+.sf-popup-content .form-group {
     margin-bottom: 1.5rem;
     text-align: left;
 }
 
-.oom-popup-content input[type="email"],
-.oom-popup-content input[type="text"] {
+.sf-popup-content input[type="email"],
+.sf-popup-content input[type="text"] {
     width: 100%;
     padding: 15px;
     background: rgba(10, 10, 10, 0.95); /* Nearly opaque background to prevent image bleed-through */
@@ -135,20 +135,20 @@
     outline: none;
 }
 
-.oom-popup-content input[type="email"]:focus,
-.oom-popup-content input[type="text"]:focus {
+.sf-popup-content input[type="email"]:focus,
+.sf-popup-content input[type="text"]:focus {
     background: #000; /* Fully opaque on focus */
     border-bottom-color: #d4af37;
 }
 
-.oom-popup-content input::placeholder {
+.sf-popup-content input::placeholder {
     color: #aaa; /* Much lighter placeholder text */
     font-style: italic;
 }
 
 /* Button Styling */
-.oom-popup-content button,
-.oom-popup-content input[type="submit"] {
+.sf-popup-content button,
+.sf-popup-content input[type="submit"] {
     background-color: transparent;
     color: #d4af37;
     border: 1px solid #d4af37;
@@ -166,8 +166,8 @@
     margin-top: 1rem;
 }
 
-.oom-popup-content button:hover,
-.oom-popup-content input[type="submit"]:hover {
+.sf-popup-content button:hover,
+.sf-popup-content input[type="submit"]:hover {
     background-color: #d4af37;
     color: #000;
     box-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
@@ -195,14 +195,14 @@
 
 /* Mobile Responsiveness */
 @media (max-width: 600px) {
-    .oom-popup-content {
+    .sf-popup-content {
         padding: 2rem;
         width: 95%;
         border-width: 3px; /* Thinner border on mobile */
     }
 
-    .oom-popup-content::before,
-    .oom-popup-content::after {
+    .sf-popup-content::before,
+    .sf-popup-content::after {
         display: none; /* Hide decorative corners on small screens */
     }
 }
