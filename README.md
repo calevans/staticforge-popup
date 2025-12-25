@@ -87,6 +87,23 @@ Get the latest updates directly to your inbox.
 *   `exit_intent` (optional): `true` to trigger when the user mouses out of the viewport.
 *   `timer` (optional): Seconds to wait before showing the popup.
 *   `popup_blocked_for` (optional): Days to hide the popup after it has been shown (default: 30).
+*   `url` (optional): Overrides the `provider_url` defined in `siteconfig.yaml` for this specific popup's form.
+
+**Overriding the Form URL**
+
+While `siteconfig.yaml` defines the default `provider_url` for your forms, you may have a specific popup that needs to submit data to a different endpoint (e.g., a different newsletter list or a specific campaign handler).
+
+To do this, simply add the `url` key to your popup's frontmatter:
+
+```yaml
+---
+popup_enabled: true
+id: special-campaign
+url: "https://hooks.zapier.com/hooks/catch/123456/abcdef/"
+---
+```
+
+When this popup is rendered, the form action will use this URL instead of the global one defined in your configuration.
 
 ### Step 3: Create the Templates
 
