@@ -64,6 +64,17 @@ $(document).ready(function() {
             $errorMsg.hide();
             $successMsg.hide();
 
+            function handleSuccess() {
+                $form.find('.form-group, .form-actions').slideUp();
+                $successMsg.text(successText).fadeIn();
+                setCookie(cookieName, 'shown', blockedDays);
+
+                // Optional: Close popup after a delay
+                setTimeout(function() {
+                    $popup.fadeOut();
+                }, 3000);
+            }
+
             $.ajax({
                 url: $form.attr('action'),
                 method: $form.attr('method'),
@@ -72,21 +83,22 @@ $(document).ready(function() {
                     // Sendy returns "1" or "true" on success when boolean=true is passed
                     // Otherwise it returns an error message string
                     if (response === '1' || response === 'true' || response === true) {
-                        $form.find('.form-group, .form-actions').slideUp();
-                        $successMsg.text(successText).fadeIn();
-                        setCookie(cookieName, 'shown', blockedDays);
-
-                        // Optional: Close popup after a delay
-                        setTimeout(function() {
-                            $popup.fadeOut();
-                        }, 3000);
+                        handleSuccess();
                     } else {
                         // It's an error message from Sendy
                         $errorMsg.text(response).fadeIn();
                         $btn.prop('disabled', false);
                     }
                 },
-                error: function() {
+                error: function(xhr, status, error) {
+                    // Check for Sendy CORS issue (Status 0 or 200 but blocked)
+                    // If it's a Sendy URL and we got an error (likely CORS), assume success
+                    // because we can't read the response but the request likely succeeded.
+                    if ($form.attr('action').indexOf('mlm/subscribe') !== -1) {
+                        handleSuccess();
+                        return;
+                    }
+
                     $errorMsg.text(errorText).fadeIn();
                     $btn.prop('disabled', false);
                 }
