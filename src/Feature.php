@@ -4,13 +4,14 @@ namespace Calevans\StaticForgePopup;
 
 use EICC\StaticForge\Core\BaseFeature;
 use EICC\StaticForge\Core\FeatureInterface;
+use EICC\StaticForge\Core\ConfigurableFeatureInterface;
 use EICC\StaticForge\Core\EventManager;
 use EICC\Utils\Container;
 use EICC\StaticForge\Features\MarkdownRenderer\MarkdownProcessor;
 use Calevans\StaticForgePopup\Services\PopupService;
 use Calevans\StaticForgePopup\Services\PopupParser;
 
-class Feature extends BaseFeature implements FeatureInterface
+class Feature extends BaseFeature implements FeatureInterface, ConfigurableFeatureInterface
 {
     protected string $name = 'Popup';
     private PopupService $service;
@@ -54,5 +55,15 @@ class Feature extends BaseFeature implements FeatureInterface
         $data['rendered_content'] = $this->service->injectPopups($data['rendered_content'], $metadata);
 
         return $data;
+    }
+
+    public function getRequiredConfig(): array
+    {
+        return [];
+    }
+
+    public function getRequiredEnv(): array
+    {
+        return [];
     }
 }
