@@ -6,6 +6,7 @@ use EICC\StaticForge\Core\BaseFeature;
 use EICC\StaticForge\Core\FeatureInterface;
 use EICC\StaticForge\Core\ConfigurableFeatureInterface;
 use EICC\StaticForge\Core\EventManager;
+use EICC\StaticForge\Core\AssetManager;
 use EICC\Utils\Container;
 use EICC\StaticForge\Features\MarkdownRenderer\MarkdownProcessor;
 use Calevans\StaticForgePopup\Services\PopupService;
@@ -18,7 +19,9 @@ class Feature extends BaseFeature implements FeatureInterface, ConfigurableFeatu
 
     protected array $eventListeners = [
         'PRE_LOOP' => ['method' => 'loadPopups', 'priority' => 100],
-        'POST_RENDER' => ['method' => 'injectPopup', 'priority' => 100]
+        'PRE_RENDER' => ['method' => 'registerAssets', 'priority' => 100],
+        'POST_RENDER' => ['method' => 'injectPopup', 'priority' => 100],
+        'POST_LOOP' => ['method' => 'copyAssets', 'priority' => 100]
     ];
 
     public function register(EventManager $eventManager, Container $container): void
@@ -30,15 +33,26 @@ class Feature extends BaseFeature implements FeatureInterface, ConfigurableFeatu
 
         $logger = $container->get('logger');
         $twig = $container->get('twig');
+        $assetManager = $container->get(AssetManager::class);
 
         // Initialize services
         $parser = new PopupParser(new MarkdownProcessor());
-        $this->service = new PopupService($parser, $logger, $twig);
+        $this->service = new PopupService($parser, $logger, $twig, $assetManager);
     }
 
     public function loadPopups(Container $container, array $data): array
     {
         $this->service->loadPopups($container);
+        return $data;
+    }
+
+    public function registerAssets(Container $container, array $data): array
+    {
+        $metadata = $data['metadata'] ?? [];
+        // Check if popups are requested
+        if (!empty($metadata['popup'])) {
+            $this->service->registerAssets($container, $metadata);
+        }
         return $data;
     }
 
@@ -52,8 +66,14 @@ class Feature extends BaseFeature implements FeatureInterface, ConfigurableFeatu
 
         $metadata = $data['metadata'] ?? $data['file_metadata'] ?? [];
 
-        $data['rendered_content'] = $this->service->injectPopups($data['rendered_content'], $metadata);
+        $data['rendered_content'] = $this->service->injectPopups($data['rendered_content'], $metadata, $container);
 
+        return $data;
+    }
+
+    public function copyAssets(Container $container, array $data): array
+    {
+        $this->service->copyAssets($container);
         return $data;
     }
 
