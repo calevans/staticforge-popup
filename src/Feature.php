@@ -26,10 +26,12 @@ class Feature extends BaseFeature implements FeatureInterface, ConfigurableFeatu
 
     public function register(EventManager $eventManager): void
     {
-        parent::register($eventManager);
-
         // Ensure dependencies are present
-        $this->requireFeatures(['MarkdownRenderer']);
+        if (!$this->requireFeatures($this->container, ['MarkdownRenderer'])) {
+            return;
+        }
+
+        parent::register($eventManager);
 
         $logger = $this->container->get('logger');
         $twig = $this->container->get('twig');
