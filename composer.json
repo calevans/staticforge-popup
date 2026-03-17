@@ -11,7 +11,7 @@
     ],
     "require": {
         "php": "^8.4",
-        "eicc/staticforge": ">=1.14.0"
+        "eicc/staticforge": ">=2.0.0"
     },
     "autoload": {
         "psr-4": {
