@@ -24,16 +24,16 @@ class Feature extends BaseFeature implements FeatureInterface, ConfigurableFeatu
         'POST_LOOP' => ['method' => 'copyAssets', 'priority' => 100]
     ];
 
-    public function register(EventManager $eventManager, Container $container): void
+    public function register(EventManager $eventManager): void
     {
-        parent::register($eventManager, $container);
+        parent::register($eventManager);
 
         // Ensure dependencies are present
         $this->requireFeatures(['MarkdownRenderer']);
 
-        $logger = $container->get('logger');
-        $twig = $container->get('twig');
-        $assetManager = $container->get(AssetManager::class);
+        $logger = $this->container->get('logger');
+        $twig = $this->container->get('twig');
+        $assetManager = $this->container->get(AssetManager::class);
 
         // Initialize services
         $parser = new PopupParser(new MarkdownProcessor());
