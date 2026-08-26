@@ -30,6 +30,5 @@
         "staticforge": {
             "feature": "Calevans\\StaticForgePopup\\Feature"
         }
-    },
-    "version": "3.0.0"
+    }
 }
