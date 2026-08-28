@@ -1,0 +1,6 @@
+/tests export-ignore
+/phpunit.xml export-ignore
+/phpstan.neon export-ignore
+/phpcs.xml export-ignore
+/.gitignore export-ignore
+/.gitattributes export-ignore

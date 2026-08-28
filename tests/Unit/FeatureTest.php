@@ -123,11 +123,76 @@ class FeatureTest extends TestCase
         $this->assertSame('<html><body>Hello</body></html>', $event->renderedContent);
     }
 
+    public function testRegisterAssetsRejectsAMaliciousPopupIdAndNeverRegistersAStyleHandleForIt(): void
+    {
+        $sourceDir = sys_get_temp_dir() . '/staticforge_popup_malicious_src_' . uniqid();
+        mkdir($sourceDir . '/assets/css', 0755, true);
+
+        // A file that WOULD be picked up by stylesheetUrls() if the malicious id
+        // reached the filesystem check verbatim, proving this is a genuine
+        // path-injection risk and not merely a missing-escaping cosmetic issue.
+        $maliciousId = '../evil" onload="alert(1)';
+        file_put_contents($sourceDir . '/assets/css/' . $maliciousId . '.css', 'body{}');
+
+        try {
+            $this->setContainerVariable('SOURCE_DIR', (string) realpath($sourceDir));
+
+            $this->logger->expects($this->once())->method('log')->with(
+                'ERROR',
+                $this->stringContains("Invalid popup id '{$maliciousId}'")
+            );
+
+            $event = new RenderEvent(
+                name: 'PRE_RENDER',
+                filePath: 'content/page.md',
+                fileUrl: '',
+                metadata: ['popup' => [$maliciousId]],
+            );
+
+            $this->feature->registerAssets($event);
+
+            /** @var AssetManager $assetManager */
+            $assetManager = $this->container->get(AssetManager::class);
+            $styles = $assetManager->getStyles();
+            $this->assertStringNotContainsString('onload', $styles);
+            $this->assertStringNotContainsString('alert', $styles);
+        } finally {
+            $this->removeDirectory($sourceDir);
+        }
+    }
+
+    public function testInjectPopupRejectsAMaliciousPopupIdAndLeavesRenderedHtmlUntouched(): void
+    {
+        $maliciousId = '../../evil"><script>alert(1)</script>';
+        $originalHtml = '<html><head></head><body></body></html>';
+
+        $this->logger->expects($this->once())->method('log')->with(
+            'ERROR',
+            $this->stringContains("Invalid popup id '{$maliciousId}'")
+        );
+
+        $event = new RenderEvent(
+            name: 'POST_RENDER',
+            filePath: 'content/page.md',
+            fileUrl: '',
+            metadata: ['popup' => [$maliciousId]],
+            renderedContent: $originalHtml,
+            outputPath: '/output/page.html',
+        );
+
+        $this->feature->injectPopup($event);
+
+        $this->assertSame($originalHtml, $event->renderedContent);
+    }
+
     public function testLoadPopupsDoesNotThrowWithoutSourceDir(): void
     {
-        // getcwd()/content almost certainly doesn't exist in the test runner;
-        // PopupService::loadPopups() should just no-op rather than error.
-        $this->logger->expects($this->never())->method('log');
+        // SOURCE_DIR is unset in the test container; PopupRepository::load()
+        // should log a warning and no-op rather than error.
+        $this->logger->expects($this->once())->method('log')->with(
+            'WARNING',
+            $this->stringContains('SOURCE_DIR')
+        );
 
         $this->feature->loadPopups(new Event('PRE_LOOP'));
     }
@@ -148,16 +213,102 @@ class FeatureTest extends TestCase
         }
     }
 
-    private function removeDirectory(string $dir): void
+    public function testInjectPopupAddsStylesheetLinksInCascadeOrder(): void
     {
-        if (!is_dir($dir)) {
-            return;
+        $sourceDir = $this->makeSourceDir();
+
+        try {
+            $event = $this->renderPage($sourceDir, '<html><head>' .
+                '<link rel="stylesheet" href="/assets/css/main.css"></head><body></body></html>');
+            $html = (string) $event->renderedContent;
+
+            $this->assertSame(1, substr_count($html, '<link rel="stylesheet" href="/assets/css/sf-popup.css">'));
+            $this->assertSame(1, substr_count($html, '<link rel="stylesheet" href="/assets/css/popup.css">'));
+            $this->assertLessThan(
+                strpos($html, 'href="/assets/css/popup.css"'),
+                strpos($html, 'href="/assets/css/sf-popup.css"'),
+            );
+            $this->assertLessThan(strpos($html, '</head>'), strpos($html, 'href="/assets/css/sf-popup.css"'));
+        } finally {
+            $this->removeDirectory($sourceDir);
         }
-        $files = array_diff(scandir($dir), ['.', '..']);
-        foreach ($files as $file) {
-            $path = "$dir/$file";
-            is_dir($path) ? $this->removeDirectory($path) : unlink($path);
+    }
+
+    public function testInjectPopupDoesNotDuplicateStylesheetLinksTheTemplateAlreadyEmitted(): void
+    {
+        $sourceDir = $this->makeSourceDir();
+
+        try {
+            $event = $this->renderPage($sourceDir, '<html><head>' .
+                '<link rel="stylesheet" href="/assets/css/sf-popup.css">' .
+                '<link rel="stylesheet" href="/assets/css/popup.css"></head><body></body></html>');
+            $html = (string) $event->renderedContent;
+
+            $this->assertSame(1, substr_count($html, 'href="/assets/css/sf-popup.css"'));
+            $this->assertSame(1, substr_count($html, 'href="/assets/css/popup.css"'));
+        } finally {
+            $this->removeDirectory($sourceDir);
         }
-        rmdir($dir);
+    }
+
+    public function testExpandedFormIsNotWrappedInAParagraph(): void
+    {
+        $sourceDir = $this->makeSourceDir();
+
+        try {
+            $event = $this->renderPage($sourceDir, '<html><head></head><body></body></html>');
+            $html = (string) $event->renderedContent;
+
+            $this->assertStringContainsString('<form action="https://forms.example.com/subscribe', $html);
+            $this->assertStringNotContainsString('<p><form', $html);
+            $this->assertStringNotContainsString('</form>' . PHP_EOL . '</p>', $html);
+        } finally {
+            $this->removeDirectory($sourceDir);
+        }
+    }
+
+    /**
+     * A SOURCE_DIR holding one popup whose body is a standalone form
+     * shortcode, plus the optional site-level popup.css.
+     */
+    private function makeSourceDir(): string
+    {
+        $sourceDir = sys_get_temp_dir() . '/staticforge_popup_src_' . uniqid();
+        mkdir($sourceDir . '/assets/css', 0755, true);
+        file_put_contents($sourceDir . '/assets/css/popup.css', '');
+        file_put_contents(
+            $sourceDir . '/news.popup',
+            "---\npopup_enabled: true\nid: news\n---\n\nHello.\n\n{{ form('newsletter') }}\n"
+        );
+
+        return (string) realpath($sourceDir);
+    }
+
+    private function renderPage(string $sourceDir, string $renderedContent): RenderEvent
+    {
+        $this->setContainerVariable('SOURCE_DIR', $sourceDir);
+        $this->setContainerVariable('site_config', [
+            'forms' => [
+                'newsletter' => [
+                    'provider_url' => 'https://forms.example.com/subscribe',
+                    'fields' => [['name' => 'email', 'type' => 'email', 'label' => 'Email']],
+                ],
+            ],
+        ]);
+
+        $this->feature->loadPopups(new Event('PRE_LOOP'));
+
+        $event = new RenderEvent(
+            name: 'POST_RENDER',
+            filePath: 'content/page.md',
+            fileUrl: '',
+            metadata: ['popup' => ['news']],
+            renderedContent: $renderedContent,
+            outputPath: '/output/page.html',
+        );
+
+        $this->feature->injectPopup($event);
+
+        return $event;
     }
 }

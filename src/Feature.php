@@ -4,22 +4,30 @@ declare(strict_types=1);
 
 namespace Calevans\StaticForgePopup;
 
+use Calevans\StaticForgePopup\Services\PopupAssetService;
+use Calevans\StaticForgePopup\Services\PopupIdValidator;
+use Calevans\StaticForgePopup\Services\PopupInjector;
+use Calevans\StaticForgePopup\Services\PopupRepository;
 use EICC\StaticForge\Core\BaseFeature;
-use EICC\StaticForge\Core\FeatureInterface;
 use EICC\StaticForge\Core\ConfigurableFeatureInterface;
 use EICC\StaticForge\Core\Events\Event;
 use EICC\StaticForge\Core\Events\EventListener;
 use EICC\StaticForge\Core\Events\RenderEvent;
 use EICC\StaticForge\Core\EventManager;
-use EICC\StaticForge\Core\AssetManager;
-use EICC\StaticForge\Features\MarkdownRenderer\MarkdownProcessor;
-use Calevans\StaticForgePopup\Services\PopupService;
-use Calevans\StaticForgePopup\Services\PopupParser;
+use EICC\StaticForge\Core\FeatureInterface;
+use EICC\Utils\Log;
 
 class Feature extends BaseFeature implements FeatureInterface, ConfigurableFeatureInterface
 {
     protected string $name = 'Popup';
-    private PopupService $service;
+
+    public function __construct(
+        private readonly PopupRepository $repository,
+        private readonly PopupAssetService $assets,
+        private readonly PopupInjector $injector,
+        private readonly Log $logger,
+    ) {
+    }
 
     public function register(EventManager $eventManager): void
     {
@@ -29,20 +37,12 @@ class Feature extends BaseFeature implements FeatureInterface, ConfigurableFeatu
         }
 
         parent::register($eventManager);
-
-        $logger = $this->container->get('logger');
-        $twig = $this->container->get('twig');
-        $assetManager = $this->container->get(AssetManager::class);
-
-        // Initialize services
-        $parser = new PopupParser(new MarkdownProcessor());
-        $this->service = new PopupService($parser, $logger, $twig, $assetManager);
     }
 
     #[EventListener('PRE_LOOP', priority: 100)]
     public function loadPopups(Event $event): void
     {
-        $this->service->loadPopups($this->container);
+        $this->repository->load($this->container);
     }
 
     #[EventListener('PRE_RENDER', priority: 100)]
@@ -50,7 +50,7 @@ class Feature extends BaseFeature implements FeatureInterface, ConfigurableFeatu
     {
         // Check if popups are requested
         if (!empty($event->metadata['popup'])) {
-            $this->service->registerAssets($this->container, $event->metadata);
+            $this->assets->registerAssets($this->container, $event->metadata);
         }
     }
 
@@ -63,17 +63,39 @@ class Feature extends BaseFeature implements FeatureInterface, ConfigurableFeatu
             return;
         }
 
-        $event->renderedContent = $this->service->injectPopups(
+        $requestedIds = PopupIdValidator::normalize(
+            $event->metadata['popup'] ?? [],
+            $this->logger,
+            "page 'popup:' frontmatter"
+        );
+        if ($requestedIds === []) {
+            return;
+        }
+
+        $popups = [];
+        foreach ($requestedIds as $id) {
+            $popup = $this->repository->get($id);
+            if ($popup === null) {
+                $this->logger->log('WARNING', "Popup '{$id}' requested but not found.");
+                continue;
+            }
+            $popups[] = $popup;
+        }
+
+        // The stylesheet URLs are recomputed rather than carried over from
+        // registerAssets(); PopupAssetService::stylesheetUrls() is pure, so
+        // the two events cannot drift apart.
+        $event->renderedContent = $this->injector->inject(
             $event->renderedContent ?? '',
-            $event->metadata,
-            $this->container
+            $popups,
+            $this->assets->stylesheetUrls($this->container, $requestedIds),
         );
     }
 
     #[EventListener('POST_LOOP', priority: 100)]
     public function copyAssets(Event $event): void
     {
-        $this->service->copyAssets($this->container);
+        $this->assets->copyAssets($this->container);
     }
 
     public function getRequiredConfig(): array

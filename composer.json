@@ -10,11 +10,13 @@
         }
     ],
     "require": {
-        "php": "^8.4",
+        "php": "^8.5",
         "eicc/staticforge": "^3.0"
     },
     "require-dev": {
-        "phpunit/phpunit": "^10.0"
+        "phpunit/phpunit": "^10.0",
+        "phpstan/phpstan": "^2.1",
+        "squizlabs/php_codesniffer": "^4.0"
     },
     "autoload": {
         "psr-4": {
@@ -30,5 +32,15 @@
         "staticforge": {
             "feature": "Calevans\\StaticForgePopup\\Feature"
         }
+    },
+    "config": {
+        "allow-plugins": {
+            "eicc/staticforge-installer": true
+        }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "stan": "phpstan analyse",
+        "cs": "phpcs"
     }
 }

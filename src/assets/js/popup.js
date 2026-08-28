@@ -1,4 +1,20 @@
 $(document).ready(function() {
+    // The config lives in a <script type="application/json"> tag rather than
+    // an inline `window.sfPopups = ...` assignment (so a strict CSP doesn't
+    // need 'unsafe-inline'). Read it here, not at file-execution time: core
+    // emits the <script src="popup.js"> tag before this feature's POST_RENDER
+    // splice, so #sf-popups does not exist in the DOM yet when this file runs
+    // — only by the time $(document).ready() fires.
+    var sfPopupsEl = document.getElementById('sf-popups');
+    if (sfPopupsEl) {
+        try {
+            window.sfPopups = JSON.parse(sfPopupsEl.textContent);
+        } catch (e) {
+            // Malformed/absent content: fall through and let the guard below
+            // no-op rather than letting JSON.parse's exception kill the handler.
+        }
+    }
+
     if (typeof window.sfPopups === 'undefined' || !Array.isArray(window.sfPopups)) {
         return;
     }
@@ -36,20 +52,26 @@ $(document).ready(function() {
                     showPopup();
                 }
             });
+        } else if (timer <= 0) {
+            console.warn('sf-popup: popup "' + id + '" has no timer and no exit_intent, so it can never be shown.');
         }
 
         $popup.find('.close-popup').on('click', function() {
             $popup.fadeOut();
         });
 
-        // Close on click outside
         $popup.on('click', function(e) {
             if ($(e.target).is($popup)) {
                 $popup.fadeOut();
             }
         });
 
-        // Handle Form Submission
+        $(document).on('keydown', function(e) {
+            if (e.key === 'Escape' && $popup.is(':visible')) {
+                $popup.fadeOut();
+            }
+        });
+
         $popup.find('form.sf-popup-form').on('submit', function(e) {
             e.preventDefault();
             var $form = $(this);
@@ -69,7 +91,6 @@ $(document).ready(function() {
                 $successMsg.text(successText).fadeIn();
                 setCookie(cookieName, 'shown', blockedDays);
 
-                // Optional: Close popup after a delay
                 setTimeout(function() {
                     $popup.fadeOut();
                 }, 3000);
@@ -79,22 +100,26 @@ $(document).ready(function() {
                 url: $form.attr('action'),
                 method: $form.attr('method'),
                 data: $form.serialize(),
+                timeout: 15000,
                 success: function(response) {
-                    // Sendy returns "1" or "true" on success when boolean=true is passed
-                    // Otherwise it returns an error message string
-                    if (response === '1' || response === 'true' || response === true) {
+                    // Some endpoints (e.g. Sendy) return "1"/"true" on success and an
+                    // error message string on failure with an HTTP 200 either way.
+                    // An empty body or "OK" are treated as success for endpoints that
+                    // don't follow that convention.
+                    if (response === '1' || response === 'true' || response === true ||
+                        response === '' || response === 'OK') {
                         handleSuccess();
                     } else {
-                        // It's an error message from Sendy
                         $errorMsg.text(response).fadeIn();
                         $btn.prop('disabled', false);
                     }
                 },
                 error: function(xhr, status, error) {
-                    // Check for Sendy CORS issue (Status 0 or 200 but blocked)
-                    // If it's a Sendy URL and we got an error (likely CORS), assume success
-                    // because we can't read the response but the request likely succeeded.
-                    if ($form.attr('action').indexOf('mlm/subscribe') !== -1) {
+                    // A status of 0 means the browser blocked the response outright
+                    // (e.g. a CORS-blocked cross-origin POST) rather than the server
+                    // reporting a real failure; a genuine HTTP error (404, 500, ...)
+                    // still has a status and is never treated as success here.
+                    if ($form.attr('data-assume-success') !== undefined && xhr.status === 0) {
                         handleSuccess();
                         return;
                     }

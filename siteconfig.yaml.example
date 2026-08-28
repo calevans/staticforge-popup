@@ -1,0 +1,58 @@
+popup:
+  # URL of the bundled structural popup CSS. Change this if you have moved
+  # or renamed sf-popup.css.
+  css_url: /assets/css/sf-popup.css
+
+  # URL of the popup JS (exit-intent/timer trigger, form submission handler).
+  js_url: /assets/js/popup.js
+
+  # Whether the Popup feature copies its bundled popup.js/sf-popup.css into
+  # OUTPUT_DIR on every build. Set to false if you vendor your own copies
+  # (e.g. a customized fork of either file) and don't want them overwritten.
+  publish_assets: true
+
+  # Default number of days a popup stays hidden (via cookie) after a visitor
+  # dismisses or submits it, when a popup's own frontmatter doesn't set
+  # popup_blocked_for.
+  default_blocked_days: 30
+
+  # Whether to inject a jQuery <script> tag into <head> when a page shows a
+  # popup. Set to false if your template/theme already loads jQuery itself.
+  load_jquery: true
+
+  # Where to load jQuery from. Must be https:// or a root-relative path
+  # (e.g. /assets/js/jquery.min.js) if you self-host it.
+  jquery_url: https://code.jquery.com/jquery-3.7.1.min.js
+
+  # Subresource Integrity hash for jquery_url. Leave empty ('') if you
+  # self-host jquery_url and don't have/want a hash. If you override
+  # jquery_url but leave this at its default, the hash won't match and the
+  # feature will drop it (with a warning) rather than emit a broken tag.
+  jquery_integrity: sha384-1H217gwSVyLSIfaLxHbE7dRb3v4mYCKbpQvzx0cegeju1MVsGrX5xXxAvs/HgeFs
+
+forms:
+  newsletter:
+    # Must be https://. Non-https values are ignored (with a warning).
+    provider_url: https://your-provider.example.com/subscribe
+    form_id: ''
+    # Whether to append ?FORMID=<form_id> (or &FORMID= if provider_url
+    # already has a query string) to the endpoint. Only applies when
+    # form_id is set.
+    append_form_id: true
+    submit_text: Subscribe
+    success_message: Thanks for signing up!
+    error_message: Something went wrong. Please try again.
+    # Set to true only for an endpoint that does not (and cannot be made to)
+    # send an Access-Control-Allow-Origin header. The browser blocks the
+    # response body outright even though the submission genuinely succeeded,
+    # so the JS cannot read it to decide success/failure. When true, popup.js
+    # treats a status-0 (blocked/opaque) response as success. It does NOT
+    # affect a real HTTP error (e.g. 500), which still reports failure.
+    # Also requires data-assume-success="1" on the <form> tag in your
+    # _popup_form.html.twig — see README.md.
+    assume_success_on_opaque_response: false
+    fields:
+      - name: email
+        label: Email Address
+        type: email
+        required: true
